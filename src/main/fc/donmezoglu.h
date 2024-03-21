@@ -11,3 +11,7 @@
  * Note : Higher priorities cause error on runtime. Remain low priority.
 */
 void taskDonmezoglu(timeUs_t currentTimeUs);
+
+void donmezogluSerialPrintS(const char* str);
+
+void donmezogluSerialPrintC(uint8_t ch);
