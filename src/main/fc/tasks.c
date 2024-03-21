@@ -47,6 +47,7 @@
 #include "drivers/vtx_common.h"
 
 #include "config/config.h"
+#include "fc/donmezoglu.h"
 #include "fc/core.h"
 #include "fc/rc.h"
 #include "fc/dispatch.h"
@@ -457,6 +458,7 @@ task_attribute_t task_attributes[TASK_COUNT] = {
 #ifdef USE_CRSF_V3
     [TASK_SPEED_NEGOTIATION] = DEFINE_TASK("SPEED_NEGOTIATION", NULL, NULL, speedNegotiationProcess, TASK_PERIOD_HZ(100), TASK_PRIORITY_LOW),
 #endif
+    [TASK_DONMEZOGLU] = DEFINE_TASK("DONMEZOGLU", NULL, NULL, taskDonmezoglu, TASK_PERIOD_HZ(33), TASK_PRIORITY_LOW),
 };
 
 task_t *getTask(unsigned taskId)
@@ -624,5 +626,7 @@ void tasksInit(void)
     const bool useCRSF = rxRuntimeState.serialrxProvider == SERIALRX_CRSF;
     setTaskEnabled(TASK_SPEED_NEGOTIATION, useCRSF);
 #endif
+
+    setTaskEnabled(TASK_DONMEZOGLU, true);
 }
 
