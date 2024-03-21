@@ -55,4 +55,3 @@ eeprom.bin
 
 # board scratch space used for automated build API, and developers
 /src/main/board
-
