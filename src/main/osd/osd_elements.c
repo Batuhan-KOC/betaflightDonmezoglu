@@ -893,12 +893,26 @@ static void osdElementDisarmed(osdElementParms_t *element)
     }
 }
 
+#include "../fc/donmezoglu.h"
+
 static void osdBackgroundPilotName(osdElementParms_t *element)
 {
+    /*
     if (strlen(pilotConfig()->pilotName) == 0) {
-        strcpy(element->buff, "PILOT_NAME");
+        strcpy(element->buff, "BATUHANKOC");
     } else {
         toUpperCase(element->buff, pilotConfig()->pilotName, MAX_NAME_LENGTH);
+    }
+    */
+
+    if(FUZE_STATUS == 0){
+        strcpy(element->buff, "H-H");
+    }
+    else if(FUZE_STATUS == 1){
+        strcpy(element->buff, "E-H");
+    }
+    else if(FUZE_STATUS == 2){
+        strcpy(element->buff, "E-E");
     }
 }
 

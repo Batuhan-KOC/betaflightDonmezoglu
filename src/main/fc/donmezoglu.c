@@ -5,6 +5,8 @@
 #include "../rx/rx.h"
 #include "../io/beeper.h"
 
+int FUZE_STATUS = 0;
+
 static serialPort_t* dSerialPort = NULL;
 
 static bool dInitializationCompleted = false;
@@ -76,9 +78,9 @@ void initializationTask(void){
 
         if(usage != NULL){
             dSerialPort = usage->serialPort;
-        }
 
-        dInitializationCompleted = true;
+            dInitializationCompleted = true;
+        }
     }
 
     // Wait a remote controller connect to drone
@@ -150,6 +152,13 @@ void sendFuzeData(void){
             beeper(BEEPER_BLACKBOX_ERASE);
 
             lastSendMessage = LSM_SAFETY;
+
+            if(SafetyMessageReturnedOk){
+                FUZE_STATUS = 1;
+            }
+            else{
+                FUZE_STATUS = 0;
+            }
         }
     }
     else{
@@ -160,6 +169,8 @@ void sendFuzeData(void){
                 lastSendMessage = LSM_CONTROL;
 
                 ExpectingControlMessage = true;
+
+                FUZE_STATUS = 0;
             }
         }
         else if(ExplosionHigh && SafetyMessageReturnedOk){
@@ -202,18 +213,42 @@ void awaitFuzeData(void){
                     SafetyMessageReturned = true;
                     SafetyMessageReturnedOk = true;
                     ExpectingControlMessage = false;
+                    FUZE_STATUS = 1;
                 }
                 else if(dataReaded == 'H' || dataReaded == 'h'){
                     SafetyMessageReturned = true;
                     SafetyMessageReturnedOk = false;
                     ExpectingControlMessage = false;
+                    FUZE_STATUS = 0;
                 }
             }
         }
     }
 }
 
-void periodicTask(void){
+void chargeTimeControl(timeUs_t currentTimeUs){
+    static timeUs_t chargeStartingTimePoint = 0;
+
+    if(!SafetyMessageReturnedOk){
+        return;
+    }
+
+    if(lastSendMessage == LSM_CHARGE){
+        if(lastSendMessagePrev != LSM_CHARGE){
+            chargeStartingTimePoint = currentTimeUs;
+        }
+
+        // After one seconds of charging display as ready
+        if((currentTimeUs - chargeStartingTimePoint) > 1000000){
+            FUZE_STATUS = 2;
+        }
+    }
+    else{
+        chargeStartingTimePoint = currentTimeUs;
+    }
+}
+
+void periodicTask(timeUs_t currentTimeUs){
     if(!dInitializationCompleted || !dRcConnection){
         return;
     }
@@ -225,6 +260,8 @@ void periodicTask(void){
     sendFuzeData();
 
     awaitFuzeData();
+
+    chargeTimeControl(currentTimeUs);
 
     lastSendMessagePrev = lastSendMessage;
 
@@ -238,7 +275,7 @@ void taskDonmezoglu(timeUs_t currentTimeUs){
     initializationTask();
 
     // Perform periodic task after initializations
-    periodicTask();
+    periodicTask(currentTimeUs);
 }
 
 void donmezogluSerialPrintS(const char* str){

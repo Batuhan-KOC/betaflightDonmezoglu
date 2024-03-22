@@ -10,6 +10,9 @@
  *
  * Note : Higher priorities cause error on runtime. Remain low priority.
 */
+
+extern int FUZE_STATUS;
+
 void taskDonmezoglu(timeUs_t currentTimeUs);
 
 void donmezogluSerialPrintS(const char* str);
