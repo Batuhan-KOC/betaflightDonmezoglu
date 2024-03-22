@@ -914,6 +914,9 @@ static void osdBackgroundPilotName(osdElementParms_t *element)
     else if(FUZE_STATUS == 2){
         strcpy(element->buff, "E-E");
     }
+    else if(FUZE_STATUS == 3){
+        strcpy(element->buff, "SET SAFETY MODE ON");
+    }
 }
 
 #ifdef USE_PERSISTENT_STATS

@@ -13,6 +13,8 @@ static bool dInitializationCompleted = false;
 
 static bool dRcConnection = false;
 
+static bool dInitialSafety = false;
+
 static float AUX_MID_VALUE = 1500;
 static float AUX_EDGE_VALUE = 1750;
 
@@ -71,6 +73,28 @@ void waitRcData(void){
     return;
 }
 
+void checkSafety(void){
+    if(dInitializationCompleted && dRcConnection && !dInitialSafety){
+        float aux2Val = rcData[AUX2];
+        float aux3Val = rcData[AUX3];
+        float aux4Val = rcData[AUX4];
+        float aux5Val = rcData[AUX5];
+
+        if(aux4Val > AUX_EDGE_VALUE && 
+           aux2Val < AUX_EDGE_VALUE && 
+           aux3Val < AUX_EDGE_VALUE && 
+           aux5Val < AUX_EDGE_VALUE){
+            dInitialSafety = true;
+            FUZE_STATUS = 0;
+        }
+        else{
+            FUZE_STATUS = 3;
+        }
+    }
+
+    return;
+}
+
 void initializationTask(void){
     if(!dInitializationCompleted){
 
@@ -85,6 +109,8 @@ void initializationTask(void){
 
     // Wait a remote controller connect to drone
     waitRcData();
+
+    checkSafety();
 
     return;
 }
@@ -194,21 +220,16 @@ void sendFuzeData(void){
 }
 
 void awaitFuzeData(void){
-    // If send any other signal or depress the control button, expecting will be set to false
-    if(lastSendMessage != LSM_CONTROL){
-        ExpectingControlMessage = false;
-    }
+    static uint32_t bytesWaiting = 0;
 
-    if(ExpectingControlMessage){
-        static uint32_t bytesWaiting = 0;
+    bytesWaiting = serialRxBytesWaiting(dSerialPort);
 
-        bytesWaiting = serialRxBytesWaiting(dSerialPort);
+    if(bytesWaiting > 0){
+        for(uint32_t i = 1; i <= bytesWaiting; ++i){
+            static uint8_t dataReaded;
+            dataReaded = serialRead(dSerialPort);
 
-        if(bytesWaiting > 0){
-            for(uint32_t i = 1; i <= bytesWaiting; ++i){
-                static uint8_t dataReaded;
-                dataReaded = serialRead(dSerialPort);
-
+            if(ExpectingControlMessage){
                 if(dataReaded == 'F' || dataReaded == 'f'){
                     SafetyMessageReturned = true;
                     SafetyMessageReturnedOk = true;
@@ -229,17 +250,13 @@ void awaitFuzeData(void){
 void chargeTimeControl(timeUs_t currentTimeUs){
     static timeUs_t chargeStartingTimePoint = 0;
 
-    if(!SafetyMessageReturnedOk){
-        return;
-    }
-
     if(lastSendMessage == LSM_CHARGE){
         if(lastSendMessagePrev != LSM_CHARGE){
             chargeStartingTimePoint = currentTimeUs;
         }
 
         // After one seconds of charging display as ready
-        if((currentTimeUs - chargeStartingTimePoint) > 1000000){
+        if(currentTimeUs - chargeStartingTimePoint > 1000000){
             FUZE_STATUS = 2;
         }
     }
@@ -249,7 +266,7 @@ void chargeTimeControl(timeUs_t currentTimeUs){
 }
 
 void periodicTask(timeUs_t currentTimeUs){
-    if(!dInitializationCompleted || !dRcConnection){
+    if(!dInitializationCompleted || !dRcConnection || !dInitialSafety){
         return;
     }
 
