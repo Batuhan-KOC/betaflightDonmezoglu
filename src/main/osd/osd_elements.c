@@ -929,6 +929,9 @@ static void osdBackgroundPilotName(osdElementParms_t *element)
     else if(FUZE_STATUS == 7){
         strcpy(element->buff, "ANAHTAR > AC   ");
     }
+    else if(FUZE_STATUS == 8){
+        strcpy(element->buff, "KUMANDAYI BAGLA");
+    }
 }
 
 #ifdef USE_PERSISTENT_STATS
