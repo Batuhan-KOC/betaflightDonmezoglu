@@ -74,16 +74,29 @@ void waitRcData(void){
 }
 
 void checkSafety(void){
+    static bool firstFuzeDataReceived = false;
+
     if(dInitializationCompleted && dRcConnection && !dInitialSafety){
         float aux2Val = rcData[AUX2];
         float aux3Val = rcData[AUX3];
         float aux4Val = rcData[AUX4];
         float aux5Val = rcData[AUX5];
 
+        if(!firstFuzeDataReceived){
+            static uint32_t bytesWaiting = 0;
+
+            bytesWaiting = serialRxBytesWaiting(dSerialPort);
+
+            if(bytesWaiting > 0){
+                firstFuzeDataReceived = true;
+            }
+        }
+
         if(aux4Val > AUX_EDGE_VALUE && 
            aux2Val < AUX_EDGE_VALUE && 
            aux3Val < AUX_EDGE_VALUE && 
-           aux5Val < AUX_EDGE_VALUE){
+           aux5Val < AUX_EDGE_VALUE &&
+           firstFuzeDataReceived){
             dInitialSafety = true;
             FUZE_STATUS = 0;
         }
@@ -99,6 +112,9 @@ void checkSafety(void){
             }
             else if(aux2Val > AUX_EDGE_VALUE){
                 FUZE_STATUS = 6; // Kontrole basma
+            }
+            else if(!firstFuzeDataReceived){
+                FUZE_STATUS = 7; // Anahtarı Aç
             }
         }
     }
@@ -185,8 +201,6 @@ void sendFuzeData(void){
     if(SafetyHigh){
         if(lastSendMessage != LSM_SAFETY){
             donmezogluSerialPrintC('G');
-
-            beeper(BEEPER_BLACKBOX_ERASE);
 
             lastSendMessage = LSM_SAFETY;
 
