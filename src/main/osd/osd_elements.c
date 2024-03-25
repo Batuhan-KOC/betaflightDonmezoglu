@@ -906,16 +906,25 @@ static void osdBackgroundPilotName(osdElementParms_t *element)
     */
 
     if(FUZE_STATUS == 0){
-        strcpy(element->buff, "H-H");
+        strcpy(element->buff, "      H-H      ");
     }
     else if(FUZE_STATUS == 1){
-        strcpy(element->buff, "E-H");
+        strcpy(element->buff, "      E-H      ");
     }
     else if(FUZE_STATUS == 2){
-        strcpy(element->buff, "E-E");
+        strcpy(element->buff, "      E-E      ");
     }
     else if(FUZE_STATUS == 3){
-        strcpy(element->buff, "SET SAFETY MODE ON");
+        strcpy(element->buff, "GUVENLIK > AC  ");
+    }
+    else if(FUZE_STATUS == 4){
+        strcpy(element->buff, "SARJ > KAPAT   ");
+    }
+    else if(FUZE_STATUS == 5){
+        strcpy(element->buff, "PATLAMA > KAPAT");
+    }
+    else if(FUZE_STATUS == 6){
+        strcpy(element->buff, "KONTROL > KAPAT");
     }
 }
 
