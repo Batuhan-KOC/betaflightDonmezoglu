@@ -875,35 +875,12 @@ static void osdElementCrosshairs(osdElementParms_t *element)
     element->buff[3] = 0;
 }
 
-static void osdElementCurrentDraw(osdElementParms_t *element)
-{
-    const float amperage = fabsf(getAmperage() / 100.0f);
-    osdPrintFloat(element->buff, SYM_NONE, amperage, "%3u", 2, false, SYM_AMP);
-}
-
-static void osdElementDebug(osdElementParms_t *element)
-{
-    tfp_sprintf(element->buff, "DBG %5d %5d %5d %5d", debug[0], debug[1], debug[2], debug[3]);
-}
-
-static void osdElementDisarmed(osdElementParms_t *element)
-{
-    if (!ARMING_FLAG(ARMED)) {
-        tfp_sprintf(element->buff, "DISARMED");
-    }
-}
-
 #include "../fc/donmezoglu.h"
 
-static void osdBackgroundPilotName(osdElementParms_t *element)
+static void osdElementCurrentDraw(osdElementParms_t *element)
 {
-    /*
-    if (strlen(pilotConfig()->pilotName) == 0) {
-        strcpy(element->buff, "BATUHANKOC");
-    } else {
-        toUpperCase(element->buff, pilotConfig()->pilotName, MAX_NAME_LENGTH);
-    }
-    */
+    //const float amperage = fabsf(getAmperage() / 100.0f);
+    //osdPrintFloat(element->buff, SYM_NONE, amperage, "%3u", 2, false, SYM_AMP);
 
     if(FUZE_STATUS == 0){
         strcpy(element->buff, "      H-H      ");
@@ -931,6 +908,27 @@ static void osdBackgroundPilotName(osdElementParms_t *element)
     }
     else if(FUZE_STATUS == 8){
         strcpy(element->buff, "KUMANDAYI BAGLA");
+    }
+}
+
+static void osdElementDebug(osdElementParms_t *element)
+{
+    tfp_sprintf(element->buff, "DBG %5d %5d %5d %5d", debug[0], debug[1], debug[2], debug[3]);
+}
+
+static void osdElementDisarmed(osdElementParms_t *element)
+{
+    if (!ARMING_FLAG(ARMED)) {
+        tfp_sprintf(element->buff, "DISARMED");
+    }
+}
+
+static void osdBackgroundPilotName(osdElementParms_t *element)
+{
+    if (strlen(pilotConfig()->pilotName) == 0) {
+        strcpy(element->buff, "PILOT_NAME");
+    } else {
+        toUpperCase(element->buff, pilotConfig()->pilotName, MAX_NAME_LENGTH);
     }
 }
 
