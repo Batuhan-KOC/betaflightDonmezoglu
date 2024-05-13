@@ -668,6 +668,8 @@ static void readRxChannelsApplyRanges(void)
     }
 }
 
+#include "../fc/donmezoglu.h"
+
 void detectAndApplySignalLossBehaviour(void)
 {
     const uint32_t currentTimeMs = millis();
@@ -686,46 +688,70 @@ void detectAndApplySignalLossBehaviour(void)
             validRxSignalTimeout[channel] = currentTimeMs + MAX_INVALID_PULSE_TIME_MS;
         }
 
-        if (failsafeIsActive()) {
-            // we are in failsafe Stage 2, whether Rx loss or BOXFAILSAFE induced
-            // pass valid incoming flight channel values to FC,
-            // so that GPS Rescue can get the 30% requirement for termination of the rescue
-            if (channel < NON_AUX_CHANNEL_COUNT) {
-                if (!thisChannelValid) {
-                    if (channel == THROTTLE ) {
-                        sample = failsafeConfig()->failsafe_throttle;
-                        // stage 2 failsafe throttle value. In GPS Rescue Flight mode, gpsRescueGetThrottle overrides, late in mixer.c
-                    } else {
-                        sample = rxConfig()->midrc;
+        if(channel != AUX5){
+            if (failsafeIsActive()) {
+                // we are in failsafe Stage 2, whether Rx loss or BOXFAILSAFE induced
+                // pass valid incoming flight channel values to FC,
+                // so that GPS Rescue can get the 30% requirement for termination of the rescue
+                if (channel < NON_AUX_CHANNEL_COUNT) {
+                    if (!thisChannelValid) {
+                        if (channel == THROTTLE ) {
+                            sample = failsafeConfig()->failsafe_throttle;
+                            // stage 2 failsafe throttle value. In GPS Rescue Flight mode, gpsRescueGetThrottle overrides, late in mixer.c
+                        } else {
+                            sample = rxConfig()->midrc;
+                        }
                     }
+                } else {
+                    // set aux channels as per Stage 1 failsafe hold/set values, allow all for Failsafe and GPS rescue MODE switches
+                    sample = getRxfailValue(channel);
                 }
             } else {
-                // set aux channels as per Stage 1 failsafe hold/set values, allow all for Failsafe and GPS rescue MODE switches
-                sample = getRxfailValue(channel);
-            }
-        } else {
-            // we are normal, or in failsafe stage 1
-            if (boxFailsafeSwitchIsOn) {
-                // BOXFAILSAFE active, but not in stage 2 yet, use stage 1 values
-                sample = getRxfailValue(channel);
-                //  set channels to Stage 1 values immediately failsafe switch is activated
-            } else if (!thisChannelValid) {
-                // everything is normal but this channel was invalid
-                if (cmp32(currentTimeMs, validRxSignalTimeout[channel]) < 0) {
-                    // first 300ms of Stage 1 failsafe
-                    sample = rcData[channel];
-                    //  HOLD last valid value on bad channel/s for MAX_INVALID_PULSE_TIME_MS (300ms)
-                } else {
-                    // remaining Stage 1 failsafe period after 300ms
-                    if (channel < NON_AUX_CHANNEL_COUNT) {
-                        rxFlightChannelsValid = false;
-                        //  declare signal lost after 300ms of any one bad flight channel
-                    }
+                // we are normal, or in failsafe stage 1
+                if (boxFailsafeSwitchIsOn) {
+                    // BOXFAILSAFE active, but not in stage 2 yet, use stage 1 values
                     sample = getRxfailValue(channel);
-                    // set channels that are invalid for more than 300ms to Stage 1 values
+                    //  set channels to Stage 1 values immediately failsafe switch is activated
+                } else if (!thisChannelValid) {
+                    // everything is normal but this channel was invalid
+                    if (cmp32(currentTimeMs, validRxSignalTimeout[channel]) < 0) {
+                        // first 300ms of Stage 1 failsafe
+                        sample = rcData[channel];
+                        //  HOLD last valid value on bad channel/s for MAX_INVALID_PULSE_TIME_MS (300ms)
+                    } else {
+                        // remaining Stage 1 failsafe period after 300ms
+                        if (channel < NON_AUX_CHANNEL_COUNT) {
+                            rxFlightChannelsValid = false;
+                            //  declare signal lost after 300ms of any one bad flight channel
+                        }
+                        sample = getRxfailValue(channel);
+                        // set channels that are invalid for more than 300ms to Stage 1 values
+                    }
+                }
+                // everything is normal, ie rcData[channel] will be set to rcRaw(channel) via 'sample'
+            }
+        }
+        else{
+            if(failsafeIsActive() || boxFailsafeSwitchIsOn || !thisChannelValid){
+                if(!AUX5_FAILSAFE_TIMER_ON){
+                    AUX5_FAILSAFE_TIMER_ON = true;
+                    AUX5_FAILSAFE_TIMER = currentTimeMs + AUX5_TIMER_LIMIT_MS;
+                }
+
+                if (cmp32(currentTimeMs, AUX5_FAILSAFE_TIMER) > 0){
+                    sample = AUX5_FAILSAFE_VALUE;
+                }
+                else{
+                    // Hold last value
+                    sample = rcData[channel];
                 }
             }
-            // everything is normal, ie rcData[channel] will be set to rcRaw(channel) via 'sample'
+            else{
+                if(AUX5_FAILSAFE_TIMER_ON){
+                    AUX5_FAILSAFE_TIMER_ON = false;
+                    AUX5_FAILSAFE_TIMER = UINT32_MAX;
+                }
+            }
         }
 
         sample = constrainf(sample, PWM_PULSE_MIN, PWM_PULSE_MAX);

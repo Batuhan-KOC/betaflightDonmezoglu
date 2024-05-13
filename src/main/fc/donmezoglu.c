@@ -7,6 +7,8 @@
 #include "../io/beeper.h"
 
 int FUZE_STATUS = 0;
+uint32_t AUX5_FAILSAFE_TIMER = UINT32_MAX;
+bool AUX5_FAILSAFE_TIMER_ON = false;
 
 static serialPort_t* dSerialPort = NULL;
 
